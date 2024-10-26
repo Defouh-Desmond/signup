@@ -3,37 +3,43 @@ $info = (object)[];
 $Error = '';
 $data = [];
 $data['userid'] = $DB->generate_id(20);
-$data['date'] = date("y-m-d H:i:s");
+$data['date'] = date("Y-m-d H:i:s");
 $arr['email'] = $_POST['email'];
 
-$sql = "select * from users where email = :email limit 1";
+// Check if the email already exists
+$sql = "SELECT * FROM users WHERE email = :email LIMIT 1";
 $result = $DB->read($sql, $arr);
 if (is_array($result)) {
-    $Error = "This user already exists, please login.";
+    $Error .= "This user already exists, please login.<br>";
 }
 
-$data['firstName'] = $_POST['firstName'];
-if (empty($_POST['firstName']) || strlen($_POST['firstName']) < 3 || !preg_match("/^[a-zA-Z ]*$/", $_POST['firstName'])) {
+// Validate first name
+$data['firstName'] = trim($_POST['firstName']);
+if (empty($data['firstName']) || strlen($data['firstName']) < 3 || !preg_match("/^[a-zA-Z ]*$/", $data['firstName'])) {
     $Error .= "Invalid first name. <br>";
 }
 
-$data['lastName'] = $_POST['lastName'];
-if (empty($_POST['lastName']) || strlen($_POST['lastName']) < 3 || !preg_match("/^[a-zA-Z ]*$/", $_POST['lastName'])) {
+// Validate last name
+$data['lastName'] = trim($_POST['lastName']);
+if (empty($data['lastName']) || strlen($data['lastName']) < 3 || !preg_match("/^[a-zA-Z ]*$/", $data['lastName'])) {
     $Error .= "Invalid last name. <br>";
 }
 
-$data['email'] = $_POST['email'];
-if (empty($_POST['email']) || !preg_match("/([\w\-]+\@[\w\-]+\.[\w\-]+)/", $_POST['email'])) {
+// Validate email
+$data['email'] = trim($_POST['email']);
+if (empty($data['email']) || !filter_var($data['email'], FILTER_VALIDATE_EMAIL)) {
     $Error .= "Invalid email. <br>";
 }
 
+// Validate password
 $data['password'] = $_POST['password'];
-if (empty($_POST['password']) || $_POST['password'] != $_POST['password2'] || strlen($_POST['password']) < 8) {
+if (empty($data['password']) || strlen($data['password']) < 8 || $data['password'] !== $_POST['password2']) {
     $Error .= "Invalid password. <br>";
 }
 
+// Validate profile image
 if (isset($_FILES['profile_image']) && $_FILES['profile_image']['error'] == 0) {
-    $allowed_extensions = array('jpg', 'jpeg', 'png', 'gif');
+    $allowed_extensions = ['jpg', 'jpeg', 'png', 'gif'];
     $file_extension = strtolower(pathinfo($_FILES['profile_image']['name'], PATHINFO_EXTENSION));
 
     if (in_array($file_extension, $allowed_extensions)) {
@@ -45,27 +51,32 @@ if (isset($_FILES['profile_image']) && $_FILES['profile_image']['error'] == 0) {
         move_uploaded_file($_FILES['profile_image']['tmp_name'], $image_path);
         $data['profile_image'] = $image_path;
     } else {
-        $Error .= "Invalid image format.";
+        $Error .= "Invalid image format. <br>";
     }
 } else {
-    $data['profile_image'] = "default.png";
+    $data['profile_image'] = "default.png"; // Use default image if none is uploaded
 }
 
-if ($Error == "") {
-    $query = "insert into users (userid, firstName, lastName, email, password, profile_image, date) values (:userid, :firstName, :lastName, :email, :password, :profile_image, :date)";
+// Check for errors
+if (empty($Error)) {
+    $query = "INSERT INTO users (userid, firstName, lastName, email, password, profile_image, date) VALUES (:userid, :firstName, :lastName, :email, :password, :profile_image, :date)";
+    $data['password'] = password_hash($data['password'], PASSWORD_DEFAULT); // Hash the password before storing
     $result = $DB->write($query, $data);
     if ($result) {
+        $info->success = true;
         $info->message = "Your profile was created.";
         $info->data_type = "info";
-        echo json_encode($info);
     } else {
+        $info->success = false;
         $info->message = "Your profile was not created due to an error.";
         $info->data_type = "error";
-        echo json_encode($info);
     }
 } else {
+    $info->success = false;
     $info->message = $Error;
     $info->data_type = "error";
-    echo json_encode($info);
 }
+
+// Return the JSON response
+echo json_encode($info);
 ?>

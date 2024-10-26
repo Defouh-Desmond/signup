@@ -5,25 +5,38 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Signup</title>
     <link rel="stylesheet" href="style.css">
+    <style>
+        #error {
+            color: red;
+            display: none; /* Hide error messages initially */
+        }
+    </style>
 </head>
 <body>
     <section>
         <div class="form">
             <div id="error"></div>
             <form id="myForm" enctype="multipart/form-data">
+                <input type="hidden" name="data_type" value="signup"> <!-- Added data_type -->
                 <div class="name">
-                    <input type="text" name="firstName" id="firstName" placeholder="First Name">
-                    <input type="text" name="lastName" id="lastName" placeholder="Last Name">
+                    <label for="firstName">First Name</label>
+                    <input type="text" name="firstName" id="firstName" placeholder="First Name" required>
+                    <label for="lastName">Last Name</label>
+                    <input type="text" name="lastName" id="lastName" placeholder="Last Name" required>
                 </div>
                 <div class="email">
-                    <input type="email" name="email" id="email" placeholder="Email">
+                    <label for="email">Email</label>
+                    <input type="email" name="email" id="email" placeholder="Email" required>
                 </div>
                 <div class="password">
-                    <input type="password" name="password" id="password" placeholder="Password">
-                    <input type="password" name="password2" id="password2" placeholder="Repeat Password">
+                    <label for="password">Password</label>
+                    <input type="password" name="password" id="password" placeholder="Password" required>
+                    <label for="password2">Repeat Password</label>
+                    <input type="password" name="password2" id="password2" placeholder="Repeat Password" required>
                 </div>
                 <div class="profile_image">
-                    <input type="file" name="profile_image" id="profile_image" accept="image/*">
+                    <label for="profile_image">Profile Image</label>
+                    <input type="file" name="profile_image" id="profile_image" accept="image/*" required>
                 </div>
                 <input type="submit" name="submit" id="submit" value=">>">
             </form>
@@ -41,6 +54,7 @@
             e.preventDefault();
             var error = _("error");
             error.innerHTML = ""; // Clear previous errors
+            error.style.display = "none"; // Hide error message initially
             signup_button.disabled = true;
             signup_button.value = ">>>";
 
@@ -49,8 +63,32 @@
             var data = new FormData(myForm);
             var imageInput = _("profile_image");
 
+            // Check if a profile image is uploaded
             if (imageInput.files.length === 0) {
                 error.innerHTML = "Please upload a profile image.";
+                error.style.display = "block"; // Show error message
+                signup_button.disabled = false;
+                signup_button.value = ">>";
+                return;
+            }
+
+            // Validate email format
+            var email = _("email").value;
+            var emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (!emailPattern.test(email)) {
+                error.innerHTML = "Please enter a valid email address.";
+                error.style.display = "block"; // Show error message
+                signup_button.disabled = false;
+                signup_button.value = ">>";
+                return;
+            }
+
+            // Validate password match
+            var password = _("password").value;
+            var password2 = _("password2").value;
+            if (password !== password2) {
+                error.innerHTML = "Passwords do not match.";
+                error.style.display = "block"; // Show error message
                 signup_button.disabled = false;
                 signup_button.value = ">>";
                 return;
@@ -58,22 +96,8 @@
 
             for (var i = inputs.length - 1; i >= 0; i--) {
                 var key = inputs[i].name;
-                switch (key) {
-                    case "firstName":
-                        data.append("firstName", inputs[i].value);
-                        break;
-                    case "lastName":
-                        data.append("lastName", inputs[i].value);
-                        break;
-                    case "email":
-                        data.append("email", inputs[i].value);
-                        break;
-                    case "password":
-                        data.append("password", inputs[i].value);
-                        break;
-                    case "password2":
-                        data.append("password2", inputs[i].value);
-                        break;
+                if (key !== "submit") { // Exclude submit button
+                    data.append(key, inputs[i].value);
                 }
             }
             send_data(data, "signup");
@@ -82,25 +106,27 @@
         function send_data(data, type) {
             var xml = new XMLHttpRequest();
             xml.onload = function() {
-                if (xml.readyState == 4 || xml.status == 200) {
+                if (xml.status === 200) {
                     handle_result(xml.responseText);
-                    signup_button.disabled = false;
-                    signup_button.value = ">>";
                 }
-            }
-            data.append("data_type", type);
+            };
             xml.open("POST", "api.php", true);
             xml.send(data);
-        }
+ }
 
         function handle_result(result) {
-            var data = JSON.parse(result);
-            if (data.data_type == "info") {
-                alert(data.message);
+            var info = JSON.parse(result);
+            if (info.success) {
+                _("error").innerHTML = "Account created successfully!";
+                _("error").style.display = "block";
+                _("error").style.color = "green";
+                _("submit").disabled = false;
+                _("submit").value = ">>";
             } else {
-                var error = _("error");
-                error.innerHTML = data.message;
-                error.style.display = "block";
+                _("error").innerHTML = info.message;
+                _("error").style.display = "block";
+                _("submit").disabled = false;
+                _("submit").value = ">>";
             }
         }
     </script>
