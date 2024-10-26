@@ -1,38 +1,32 @@
 <?php
-
 session_start();
-
-
-$DATA_RAW = file_get_contents("php://input");
-$DATA_OBJ = json_decode($DATA_RAW);
-
 $info = (object)[];
 
-//check if logged in
-if (! isset($_SESSION['userid'])) 
-{
-    if (isset($DATA_OBJ->data_type) && $DATA_OBJ->data_type != "login" && $DATA_OBJ->data_type != "signup" )
-    {
+if (!isset($_SESSION['userid'])) {
+    if (!isset($_POST['data_type']) || ($_POST['data_type'] != 'login' && $_POST['data_type'] != 'signup')) {
         $info->logged_in = false;
         echo json_encode($info);
         die;
     }
-
 }
 
 require_once("classes/autoload.php");
 $DB = new Database();
-
-
 $Error = "";
 
-//process the dataa
-if (isset($DATA_OBJ->data_type) && $DATA_OBJ->data_type =="signup" ) {
-
-    include("includes/signup.php");
-
-}elseif (isset($DATA_OBJ->data_type) && $DATA_OBJ->data_type =="login" ) {
-
-    include("includes/login.php");
-
+if (isset($_POST['data_type'])) {
+    switch ($_POST['data_type']) {
+        case 'signup':
+            include("includes/signup.php");
+            break;
+        case 'login':
+            include("includes/login.php");
+            break;
+        default:
+            $info->success = false;
+            $info->message = "Invalid data type";
+            echo json_encode($info);
+            break;
+    }
 }
+?>

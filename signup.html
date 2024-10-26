@@ -3,143 +3,106 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
+    <title>Signup</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
     <section>
-        <div class="left">
-            <div class="logo">
-                <h1>DIC IND</h1>
-            </div>
-
-            <div class="left_group">
-                <div>
-                    <h1>New User Registration.</h1>
+        <div class="form">
+            <div id="error"></div>
+            <form id="myForm" enctype="multipart/form-data">
+                <div class="name">
+                    <input type="text" name="firstName" id="firstName" placeholder="First Name">
+                    <input type="text" name="lastName" id="lastName" placeholder="Last Name">
                 </div>
-    
-                <div class="links">
-                    <a href="#">Login</a>
-                    <a href="#" class="active">Signup</a>
+                <div class="email">
+                    <input type="email" name="email" id="email" placeholder="Email">
                 </div>
-            </div>
-
-            <footer>
-                <p>Terms of use and contraindication</p>
-            </footer>
-            
-        </div>
-        <div class="right">
-            <div class="right_left">
-                <div class="language">
-                    <button class="item">RU</button>
-                    <button class="item">DE</button>
-                    <button class="item active">EN</button>
+                <div class="password">
+                    <input type="password" name="password" id="password" placeholder="Password">
+                    <input type="password" name="password2" id="password2" placeholder="Repeat Password">
                 </div>
-            </div>
-            
-            <div class="heading">
-                <h2>Signup</h2>
-            </div>
-            <div class="img">
-                <img src="image/mr fabrice assign ment.jpg" alt="item">
-                <button id="change_image_button">+</button>
-            </div>
-
-            <div class="form">
-                <div id="error"></div>
-                <form action="#" id="myForm">
-                    <div class="name">
-                        <input type="text" name="firstName" id="firstName" placeholder="Name">
-                        <input type="text" name="lastName" id="lastName" placeholder="Last Name">
-                    </div>
-                    <div class="email">
-                        <input type="email" name="email" id="email" placeholder="Email">
-                    </div>
-                    <div class="password">
-                        <input type="password" name="password"  id="password" placeholder="Password">
-                        <input type="password" name="password2" id="password2" placeholder="Repeat password">
-                    </div>
-
-                    <input type="submit" name="submit" id="submit" value=">>">
-                </form>
-            </div>
+                <div class="profile_image">
+                    <input type="file" name="profile_image" id="profile_image" accept="image/*">
+                </div>
+                <input type="submit" name="submit" id="submit" value=">>">
+            </form>
         </div>
     </section>
-
     <script>
-        //TO GET ELEMENTS BY ID
         function _(element) {
-            return document.getElementById(element)
+            return document.getElementById(element);
         }
 
         var signup_button = _("submit");
         signup_button.addEventListener("click", collect_data);
 
-        function collect_data() {
+        function collect_data(e) {
+            e.preventDefault();
+            var error = _("error");
+            error.innerHTML = ""; // Clear previous errors
             signup_button.disabled = true;
             signup_button.value = ">>>";
+
             var myForm = _("myForm");
             var inputs = myForm.getElementsByTagName("INPUT");
+            var data = new FormData(myForm);
+            var imageInput = _("profile_image");
 
-            var data = {};
+            if (imageInput.files.length === 0) {
+                error.innerHTML = "Please upload a profile image.";
+                signup_button.disabled = false;
+                signup_button.value = ">>";
+                return;
+            }
+
             for (var i = inputs.length - 1; i >= 0; i--) {
                 var key = inputs[i].name;
                 switch (key) {
                     case "firstName":
-                        data.firstName = inputs[i].value;
+                        data.append("firstName", inputs[i].value);
                         break;
-
                     case "lastName":
-                    data.lastName = inputs[i].value;
-                    break;
-
+                        data.append("lastName", inputs[i].value);
+                        break;
                     case "email":
-                        data.email = inputs[i].value;
+                        data.append("email", inputs[i].value);
                         break;
-
                     case "password":
-                        data.password = inputs[i].value;
+                        data.append("password", inputs[i].value);
                         break;
-
                     case "password2":
-                        data.password2 = inputs[i].value;
+                        data.append("password2", inputs[i].value);
                         break;
                 }
             }
-
             send_data(data, "signup");
         }
 
         function send_data(data, type) {
             var xml = new XMLHttpRequest();
-
             xml.onload = function() {
                 if (xml.readyState == 4 || xml.status == 200) {
-                    handle_result(xml.responseText)
+                    handle_result(xml.responseText);
                     signup_button.disabled = false;
                     signup_button.value = ">>";
                 }
             }
-
-            data.data_type = type;
-            var data_string = JSON.stringify(data); // to convert our object to a string.
-
+            data.append("data_type", type);
             xml.open("POST", "api.php", true);
-            xml.send(data_string);
+            xml.send(data);
         }
 
         function handle_result(result) {
             var data = JSON.parse(result);
             if (data.data_type == "info") {
-                alert(data.message)
+                alert(data.message);
             } else {
                 var error = _("error");
                 error.innerHTML = data.message;
-                error.style.display = "block"
+                error.style.display = "block";
             }
         }
     </script>
-    
 </body>
 </html>
